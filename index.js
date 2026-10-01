@@ -9,7 +9,7 @@ const multer = require('multer');
 const testRoute = require("./src/routes/routes");
 const dashboardRoute = require("./src/routes/dashboard.routes");
 const projectRoute = require("./src/routes/project.routes");
-require("./src/config/mongo");
+const mongoose = require("./src/config/mongo");
 
 // CORS configuration
 app.use(cors({
@@ -22,6 +22,20 @@ app.use(cors({
 // Middleware
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+// Health check
+app.get("/health", (req, res) => {
+  const dbStates = ["disconnected", "connected", "connecting", "disconnecting"];
+  const dbState = dbStates[mongoose.connection.readyState] || "unknown";
+  const healthy = mongoose.connection.readyState === 1;
+
+  res.status(healthy ? 200 : 503).json({
+    status: healthy ? "ok" : "error",
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+    database: dbState
+  });
+});
 
 // Use routes
 app.use("/", testRoute);
